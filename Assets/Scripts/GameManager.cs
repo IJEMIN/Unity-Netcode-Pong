@@ -1,66 +1,92 @@
-﻿// using Photon.Pun;
-// using UnityEngine;
-// using UnityEngine.SceneManagement;
-// using UnityEngine.UI;
-//
-// public class GameManager : MonoBehaviourPunCallbacks
-// {
-//     public static GameManager Instance
-//     {
-//         get
-//         {
-//             if (instance == null) instance = FindObjectOfType<GameManager>();
-//
-//             return instance;
-//         }
-//     }
-//
-//     private static GameManager instance;
-//
-//     public Text scoreText;
-//     public Transform[] spawnPositions;
-//     public GameObject playerPrefab;
-//     public GameObject ballPrefab;
-//
-//     private int[] playerScores;
-//
-//     private void Start()
-//     {
-//         playerScores = new[] {0, 0};
-//         SpawnPlayer();
-//
-//         if (PhotonNetwork.IsMasterClient) SpawnBall();
-//     }
-//
-//     private void SpawnPlayer()
-//     {
-//         var localPlayerIndex = PhotonNetwork.LocalPlayer.ActorNumber - 1;
-//         var spawnPosition = spawnPositions[localPlayerIndex % spawnPositions.Length];
-//
-//         PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, Quaternion.identity);
-//     }
-//
-//     private void SpawnBall()
-//     {
-//         PhotonNetwork.Instantiate(ballPrefab.name, Vector2.zero, Quaternion.identity).GetComponent<Ball>();
-//     }
-//
-//     public override void OnLeftRoom()
-//     {
-//         SceneManager.LoadScene("Lobby");
-//     }
-//
-//     public void AddScore(int playerNumber, int score)
-//     {
-//         playerScores[playerNumber - 1] += score;
-//         
-//         photonView.RPC("RPCUpdateScoreText", RpcTarget.All, playerScores[0].ToString(), playerScores[1].ToString());
-//     }
-//
-//     
-//     [PunRPC]
-//     private void RPCUpdateScoreText(string player1ScoreText, string player2ScoreText)
-//     {
-//         scoreText.text = $"{player1ScoreText} : {player2ScoreText}";
-//     }
-// }
+﻿using System.Collections.Generic;
+using System.Linq;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class GameManager : NetworkBehaviour
+{
+    public static GameManager Instance
+    {
+        get
+        {
+            if (instance == null) instance = FindObjectOfType<GameManager>();
+
+            return instance;
+        }
+    }
+
+    public bool IsGameActive { get; set; }
+    
+    private static GameManager instance;
+
+    public Text scoreText;
+    public Transform[] spawnPositions;
+    public Goalpost[] goalposts;
+    public Color[] playerColors;
+    public GameObject playerPrefab;
+    public GameObject ballPrefab;
+
+    private Dictionary<ulong, int> playerScores;
+
+    private void Start()
+    {
+        SpawnPlayer();
+
+        IsGameActive = true;
+
+        if (NetworkManager.IsServer)
+        {
+            SpawnBall();
+        }
+    }
+
+    private void SpawnPlayer()
+    {
+        var clientsList = NetworkManager.ConnectedClientsList;
+
+        // Pong only can be played by 2 players 
+        if (clientsList.Count != 2)
+        {
+            Debug.LogError("Pong can only be played by 2 players...");
+            return;
+        }
+        
+        for (var i = 0; i < clientsList.Count; i++)
+        {
+            var client = clientsList[i];
+            var playerControl = client.PlayerObject.GetComponent<PlayerControl>();
+            var spawnPosition = spawnPositions[i];
+            
+            var goalPost = goalposts[i];
+            goalPost.OwnerId = client.ClientId;
+
+            playerControl.SpawnToPositionClientRpc(spawnPosition.position);
+            playerControl.SetActiveControlClientRpc(true);
+        }
+    }
+
+    private void SpawnBall()
+    {
+        var ballGameObject = Instantiate(ballPrefab, Vector2.zero, Quaternion.identity);
+        var ball = ballGameObject.GetComponent<Ball>();
+        ball.NetworkObject.Spawn();
+    }
+
+    public void AddScore(ulong playerId, int score)
+    {
+        playerScores[playerId] += score;
+
+        var scores = playerScores.Values.ToArray();
+        var player1Score = scores[0];
+        var player2Score = scores[1];
+        
+        UpdateScoreTextClientRpc(player1Score, player2Score);
+    }
+
+    [ClientRpc]
+    private void UpdateScoreTextClientRpc(int player1Score, int player2Score)
+    {
+        scoreText.text = $"{player1Score} : {player2Score}";
+    }
+}

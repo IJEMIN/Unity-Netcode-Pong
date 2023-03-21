@@ -10,14 +10,32 @@ public class MenuManager : MonoBehaviour
     public InputField _hostAddressInputField;
     private const ushort DefaultPort = 7777;
 
+
+    // set max player in session as 2 
+    private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    {
+        if (NetworkManager.Singleton.ConnectedClientsList.Count < 2)
+        {
+            response.Approved = true;
+        }
+        else
+        {
+            response.Approved = false;
+            response.Reason = "Max player in session is 2";
+        }
+    }
     public void CreateGameAsHost()
     {
         var transport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
         transport.ConnectionData.Port = DefaultPort;
-        
+
+        // set max player in session as 2
+        NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true; 
+        NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
+
         if (NetworkManager.Singleton.StartHost())
         {
-            NetworkManager.Singleton.SceneManager.LoadScene("InGame", LoadSceneMode.Single);
+            NetworkManager.Singleton.SceneManager.LoadScene("Lobby", LoadSceneMode.Single);
         }
         else
         {

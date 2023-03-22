@@ -10,6 +10,10 @@ public class MenuManager : MonoBehaviour
     public InputField _hostAddressInputField;
     private const ushort DefaultPort = 7777;
 
+    private void Awake()
+    {
+        _infoText.text = string.Empty;
+    }
 
     // set max player in session as 2 
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
@@ -30,7 +34,7 @@ public class MenuManager : MonoBehaviour
         transport.ConnectionData.Port = DefaultPort;
 
         // set max player in session as 2
-        NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true; 
+        NetworkManager.Singleton.NetworkConfig.ConnectionApproval = false; 
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
 
         if (NetworkManager.Singleton.StartHost())

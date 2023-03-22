@@ -25,7 +25,7 @@ public class Ball : NetworkBehaviour
             var goalpost = hit.collider.GetComponent<Goalpost>();
             if (goalpost != null)
             {
-                GameManager.Instance.AddScore(goalpost.OwnerId, 1);
+                GameManager.Instance.AddScore(goalpost.OpponentId, 1);
             }
         }
 

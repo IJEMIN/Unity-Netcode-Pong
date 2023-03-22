@@ -1,16 +1,18 @@
 ﻿using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 
 public class PlayerControl : NetworkBehaviour
 {
     private SpriteRenderer _spriteRenderer;
+    private NetworkTransform _networkTransform;
     
-    public float speed = 3f;
-    private bool _controlActive;
+    public float speed = 5f;
 
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        _networkTransform = GetComponent<NetworkTransform>();
     }
     
     public override void OnNetworkSpawn()
@@ -20,12 +22,11 @@ public class PlayerControl : NetworkBehaviour
     }
     
     [ClientRpc]
-    public void SetActiveControlClientRpc(bool active)
+    public void SetRenderActiveClientRpc(bool active)
     {
         _spriteRenderer.enabled = active;
-        _controlActive = active;
     }
-
+    
     [ClientRpc]
     public void SpawnToPositionClientRpc(Vector3 position)
     {
@@ -34,7 +35,7 @@ public class PlayerControl : NetworkBehaviour
 
     private void Update()
     {
-        if (!_controlActive)
+        if (GameManager.Instance == null || !GameManager.Instance.IsGameActive)
         {
             return;
         }
@@ -43,10 +44,13 @@ public class PlayerControl : NetworkBehaviour
         {
             return;
         }
-
+        
         var input = Input.GetAxis("Vertical");
         
         var distance = input * speed * Time.deltaTime;
-        transform.position += Vector3.up * distance;
+        var position = transform.position;
+        position.y += distance;
+        position.y = Mathf.Clamp(position.y, -4.5f, 4.5f);
+        transform.position = position;
     }
 }

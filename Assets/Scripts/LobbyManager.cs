@@ -23,17 +23,19 @@ public class LobbyManager : NetworkBehaviour
         // 만약 우리가 서버(호스트)라면, 클라이언트들이 접속했는지 콜백을 통해 감지하고 관리해야함
         if (IsServer)
         {
-            //Server will be notified when a client connects
+            //Server will be notified when a client connects or disconnects
             NetworkManager.OnClientConnectedCallback += OnClientConnectedCallback;
+            NetworkManager.OnClientDisconnectCallback += OnClientDisconnectedCallback;
+
             // 서버는 OnLoadComplete를 모든 클라이언트들에 대해서 듣는다는 것에 주의!
-            NetworkManager.SceneManager.OnLoadComplete += OnClientLoadComplete;
+            NetworkManager.SceneManager.OnLoadComplete += OnClientSceneLoadComplete;
         }
 
         //Update our lobby
         UpdateLobbyText();
     }
 
-    private void OnClientLoadComplete(ulong clientid, string scenename, LoadSceneMode loadscenemode)
+    private void OnClientSceneLoadComplete(ulong clientid, string scenename, LoadSceneMode loadscenemode)
     {
         if (IsServer)
         {
@@ -45,8 +47,8 @@ public class LobbyManager : NetworkBehaviour
 
             UpdateAndCheckPlayersInLobby();
         }
-        
     }
+
 
     private void UpdateLobbyText()
     {
@@ -56,8 +58,14 @@ public class LobbyManager : NetworkBehaviour
             var clientId = clientLobbyStatusPair.Key;
             var isReady = clientLobbyStatusPair.Value;
 
-            stringBuilder.Append($"PLAYER_{clientId} :");
-            stringBuilder.Append(isReady ? "READY" : "NOT READY");
+            if (isReady)
+            {
+                stringBuilder.AppendLine($"PLAYER_{clientId} : READY");    
+            }
+            else
+            {
+                stringBuilder.AppendLine($"PLAYER_{clientId} : NOT READY");
+            }
         }
         
         lobbyText.text = stringBuilder.ToString();
@@ -87,7 +95,7 @@ public class LobbyManager : NetworkBehaviour
         if (enoughPlayer && allReady)
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnectedCallback;
-            NetworkManager.SceneManager.OnLoadComplete -= OnClientLoadComplete;
+            NetworkManager.SceneManager.OnLoadComplete -= OnClientSceneLoadComplete;
             NetworkManager.SceneManager.LoadScene("InGame", LoadSceneMode.Single);
         }
     }
@@ -113,7 +121,19 @@ public class LobbyManager : NetworkBehaviour
             UpdateAndCheckPlayersInLobby();
         }
     }
-    
+
+    private void OnClientDisconnectedCallback(ulong clientId)
+    {
+        if (IsServer)
+        {
+            if (_clientsInLobbyReadyStateDictionary.ContainsKey(clientId))
+            {
+                _clientsInLobbyReadyStateDictionary.Remove(clientId);
+                UpdateLobbyText();
+            }
+        }
+    }
+
     [ClientRpc]
     private void SendClientReadyStatusUpdatesClientRpc(ulong clientId, bool isReady)
     {

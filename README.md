@@ -1,9 +1,9 @@
-# Unity-Network-Pong
-Multiplayer Pong with Google's Firebase and Photon's PUN2
-
-
-# TODO
-- Add Descriptions
-- Add Unity Project Tutorial
-- Add Firebase project setup tutorial
-- Add license
+# Unity-Netcode-Pong
+![in-game-pong-image](docs/ingame.png)
+Simple Multiplayer Pong based on Unty Netcode
+## Requirements
+- Unity 2022.2
+## Screenshots
+![menu-image](docs/menu.png)
+![lobby-images](docs/screenshot_1.png)
+![multi-play-image](docs/screenshot_2.png)

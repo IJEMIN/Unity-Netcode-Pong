@@ -1,17 +1,18 @@
-﻿using Photon.Pun;
+﻿using Unity.Netcode;
 using UnityEngine;
 
-public class Ball : MonoBehaviourPun
+public class Ball : NetworkBehaviour
 {
-    public bool IsMasterClientLocal => PhotonNetwork.IsMasterClient && photonView.IsMine;
-
     private Vector2 direction = Vector2.right;
     private readonly float speed = 10f;
     private readonly float randomRefectionIntensity = 0.1f;
     
     private void FixedUpdate()
     {
-        if (!IsMasterClientLocal || PhotonNetwork.PlayerList.Length < 2) return;
+        if (!IsServer || !GameManager.Instance.IsGameActive)
+        {
+            return;
+        }
 
         var distance = speed * Time.deltaTime;
         var hit = Physics2D.Raycast(transform.position, direction, distance);
@@ -24,7 +25,7 @@ public class Ball : MonoBehaviourPun
             var goalpost = hit.collider.GetComponent<Goalpost>();
             if (goalpost != null)
             {
-                GameManager.Instance.AddScore(goalpost.playerNumber, 1);
+                GameManager.Instance.AddScore(goalpost.OpponentId, 1);
             }
         }
 

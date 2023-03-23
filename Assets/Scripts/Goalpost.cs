@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Photon.Pun;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Goalpost : MonoBehaviour
 {
-    public int playerNumber;
+    public ulong OwnerId { get; set; }
+    public ulong OpponentId { get; set; }
 }

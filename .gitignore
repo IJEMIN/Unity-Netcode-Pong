@@ -41,3 +41,5 @@ sysinfo.txt
 # ZIP
 *.zip
 # End of https://www.gitignore.io/api/unity
+Logs
+UserSettings
